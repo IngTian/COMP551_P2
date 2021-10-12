@@ -125,12 +125,19 @@ def cross_validate_with_val_data(
     training_set = x
     model.fit(x, y)
 
+    train_macro_f1 = 0
+    train_weighted_f1=0
+    train_accuracy=0
+    val_macro_f1=0
+    val_weighted_f1=0
+    val_accuracy=0
+
     training_predictions = model.predict(x)
     training_report = classification_report(y, training_predictions.astype(int),
                                             output_dict=True, zero_division=0)
 
     validation_predictions = model.predict(val_x)
-    validation_report = classification_report(val_y validation_predictions.astype(int),
+    validation_report = classification_report(val_y, validation_predictions.astype(int),
                                               output_dict=True, zero_division=0)
 
     train_macro_f1 += training_report["macro avg"]["f1-score"]
@@ -142,13 +149,13 @@ def cross_validate_with_val_data(
     val_accuracy += validation_report["accuracy"]
 
     return {
-        "training macro f1": train_macro_f1 / n_fold,
-        "training weighted f1": train_weighted_f1 / n_fold,
-        "training accuracy": train_accuracy / n_fold,
+        "training macro f1": train_macro_f1 / 2,
+        "training weighted f1": train_weighted_f1 / 2,
+        "training accuracy": train_accuracy / 2,
 
-        "accuracy": val_accuracy / n_fold,
-        "macro f1": val_macro_f1 / n_fold,
-        "weighted f1": val_weighted_f1 / n_fold,
+        "accuracy": val_accuracy / 2,
+        "macro f1": val_macro_f1 / 2,
+        "weighted f1": val_weighted_f1 / 2,
     }
 
 
