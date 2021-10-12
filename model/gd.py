@@ -20,7 +20,7 @@ class LogisticRegression:
             max_iterations: int = 1e5,
             verbose: bool = True,
             mini_batch_ratio: float = 1,
-            momentum: Tuple[float, int] = None,
+            momentum: float = None,
             update_weight_method: UpdateWeightMethod = UpdateWeightMethod.REGULAR
     ):
         self.add_bias = add_bias
@@ -79,10 +79,13 @@ class LogisticRegression:
         """
         if self.update_weights_method == UpdateWeightMethod.MOMENTUM:
             # TODO: Use momentum to update weights
-            pass
+            beta = momentum
+            T = self.history_gradients.size
+            for t in np.arange(1, T):
+                self.weights += self.history_gradients[-t] * (1 - beta) * beta**(T - t)
         elif self.update_weights_method == UpdateWeightMethod.REGULAR:
             # TODO: Update weights regularly
-            pass
+            self.weights = self.weights - self.learning_rate * current_gradient 
 
     def separate_training_data(
             self,
