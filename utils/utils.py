@@ -121,17 +121,7 @@ def cross_validate_with_val_data(
         val_x: np.ndarray = None,
         val_y: np.ndarray = None,
 ) -> CrossValidationMean:
-    # TODO: Handle cross validation when val is proven
-    training_set = x
     model.fit(x, y)
-
-    train_macro_f1 = 0
-    train_weighted_f1=0
-    train_accuracy=0
-    val_macro_f1=0
-    val_weighted_f1=0
-    val_accuracy=0
-
     training_predictions = model.predict(x)
     training_report = classification_report(y, training_predictions.astype(int),
                                             output_dict=True, zero_division=0)
@@ -140,22 +130,14 @@ def cross_validate_with_val_data(
     validation_report = classification_report(val_y, validation_predictions.astype(int),
                                               output_dict=True, zero_division=0)
 
-    train_macro_f1 += training_report["macro avg"]["f1-score"]
-    train_weighted_f1 += training_report["weighted avg"]["f1-score"]
-    train_accuracy += training_report["accuracy"]
-
-    val_macro_f1 += validation_report["macro avg"]["f1-score"]
-    val_weighted_f1 += validation_report["weighted avg"]["f1-score"]
-    val_accuracy += validation_report["accuracy"]
-
     return {
-        "training macro f1": train_macro_f1 / 2,
-        "training weighted f1": train_weighted_f1 / 2,
-        "training accuracy": train_accuracy / 2,
+        "training macro f1": training_report["macro avg"]["f1-score"],
+        "training weighted f1": training_report["weighted avg"]["f1-score"],
+        "training accuracy": training_report["accuracy"],
 
-        "accuracy": val_accuracy / 2,
-        "macro f1": val_macro_f1 / 2,
-        "weighted f1": val_weighted_f1 / 2,
+        "accuracy": validation_report["macro avg"]["f1-score"],
+        "macro f1": validation_report["weighted avg"]["f1-score"],
+        "weighted f1": validation_report["accuracy"],
     }
 
 
