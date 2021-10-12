@@ -1,89 +1,13 @@
-import math
-from typing import List, Tuple, Callable, Dict, Any, Union
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.preprocessing import OneHotEncoder
+from utils.math_utils import cartesian
+from types.types import *
+from typing import List, Tuple, Callable, Dict, Any
 from sklearn.metrics import classification_report
 import numpy as np
-import matplotlib.pyplot as plt
-import pandas as pd
 from simple_chalk import chalk
 
 np.set_printoptions(linewidth=200)
 
-ScikitLearnModel = Union[DecisionTreeClassifier, KNeighborsClassifier]
-
 CrossValidationMean = Dict[str, Any]
-
-
-def cartesian(arrays, out=None):
-    """
-    Generate a cartesian product of input arrays.
-
-    Parameters
-    ----------
-    arrays : list of array-like
-        1-D arrays to form the cartesian product of.
-    out : ndarray
-        Array to place the cartesian product in.
-
-    Returns
-    -------
-    out : ndarray
-        2-D array of shape (M, len(arrays)) containing cartesian products
-        formed of input arrays.
-
-    Examples
-    --------
-    array([[1, 4, 6],
-           [1, 4, 7],
-           [1, 5, 6],
-           [1, 5, 7],
-           [2, 4, 6],
-           [2, 4, 7],
-           [2, 5, 6],
-           [2, 5, 7],
-           [3, 4, 6],
-           [3, 4, 7],
-           [3, 5, 6],
-           [3, 5, 7]])
-
-    """
-
-    arrays = [np.asarray(x) for x in arrays]
-    n = np.prod([x.size for x in arrays])
-    if out is None:
-        out = np.zeros([n, len(arrays)], dtype=object)
-    m = int(n / arrays[0].size)
-    out[:, 0] = np.repeat(arrays[0], m)
-    if arrays[1:]:
-        temp = cartesian(arrays[1:])
-        if (len(temp.shape) == 1):
-            temp = temp[:, np.newaxis]
-        for start_index in [k * m for k in range(arrays[0].size)]:
-            out[start_index:start_index + m, 1:] = temp
-    return out
-
-
-def read_data(path: str, columns: List[str], verbose=True) -> pd.DataFrame:
-    """
-    Read a csv file by the given path.
-
-    :param path: This is the path.
-    :param columns: The data columns.
-    :param verbose: Decide whether to print logs.
-    :return: A Pandas DataFrame object.
-    """
-    df = pd.read_csv(path)
-    df.columns = columns
-
-    if verbose:
-        print(f'{chalk.bold.greenBright("The data set has successfully been loaded.")}\n'
-              f'{chalk.bold("PATH: ")} {path}\n'
-              f'{chalk.bold("-" * 15 + "PRINTING DATA PREVIEW" + "-" * 15)}\n'
-              f'{df.head()}\n')
-
-    return df
 
 
 def preprocess_data(x: np.ndarray,
@@ -113,19 +37,21 @@ def preprocess_data(x: np.ndarray,
 
 def get_best_model_parameter(
         model_parameters: Dict[str, List[Any]],
-        model: Callable[[Any], ScikitLearnModel],
+        model: Callable[[Any], LearningModel],
         x: np.ndarray,
         y: np.ndarray,
-        cross_validator: Callable[[np.ndarray, np.ndarray, int, ScikitLearnModel], CrossValidationMean],
+        cross_validator: Callable[[np.ndarray, np.ndarray, int, LearningModel], CrossValidationMean],
         verbose=True,
         method='f1'
-) -> (Dict[str, Any], List):
+) -> Tuple[(Dict[str, Any], List), List[Tuple[Dict[str, Any], Dict[str, Any]]]]:
     """
     Use a grid search to search for
     all possible combinations in the
     parameters' space, and select the
     best one given the f1 score from
     the validator.
+    :param method:
+    :param verbose:
     :param model_parameters: A defined dict of possible model parameters.
     :param model: A model constructor
     :param x: X
@@ -169,7 +95,7 @@ def get_best_model_parameter(
     return best_combination, results
 
 
-def cross_validate(x: np.ndarray, y: np.ndarray, n_fold: int, model: ScikitLearnModel) -> CrossValidationMean:
+def cross_validate(x: np.ndarray, y: np.ndarray, n_fold: int, model: LearningModel) -> CrossValidationMean:
     """
     Implement a cross validate algorithm
     to check how the model performs.
@@ -209,13 +135,13 @@ def cross_validate(x: np.ndarray, y: np.ndarray, n_fold: int, model: ScikitLearn
             )
 
         # Make Predictions
-        fitted_model = model.fit(training_set[:, :-1], training_set[:, -1].astype(int))
+        model.fit(training_set[:, :-1], training_set[:, -1].astype(int))
 
-        training_predictions = fitted_model.predict(training_set[:, :-1])
+        training_predictions = model.predict(training_set[:, :-1])
         training_report = classification_report(training_set[:, -1].astype(int), training_predictions.astype(int),
                                                 output_dict=True, zero_division=0)
 
-        validation_predictions = fitted_model.predict(validation_set[:, :-1])
+        validation_predictions = model.predict(validation_set[:, :-1])
         validation_report = classification_report(validation_set[:, -1].astype(int), validation_predictions.astype(int),
                                                   output_dict=True, zero_division=0)
 
@@ -238,7 +164,7 @@ def cross_validate(x: np.ndarray, y: np.ndarray, n_fold: int, model: ScikitLearn
     }
 
 
-def calculate_inaccuracy(x: np.ndarray, y: np.ndarray, model: ScikitLearnModel) -> float:
+def calculate_inaccuracy(x: np.ndarray, y: np.ndarray, model: LearningModel) -> float:
     """
     Calculate inaccuracies.
     :param x: X
