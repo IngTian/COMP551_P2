@@ -40,9 +40,12 @@ def get_best_model_parameter(
         model: Callable[[Any], LearningModel],
         x: np.ndarray,
         y: np.ndarray,
-        cross_validator: Callable[[np.ndarray, np.ndarray, int, LearningModel], CrossValidationMean],
+        cross_validator: Callable[
+            [np.ndarray, np.ndarray, int, LearningModel, np.ndarray, np.ndarray], CrossValidationMean],
         verbose=True,
-        method='f1'
+        method='f1',
+        val_x: np.ndarray = None,
+        val_y: np.ndarray = None,
 ) -> Tuple[(Dict[str, Any], List), List[Tuple[Dict[str, Any], Dict[str, Any]]]]:
     """
     Use a grid search to search for
@@ -56,6 +59,8 @@ def get_best_model_parameter(
     :param model: A model constructor
     :param x: X
     :param y: y
+    :param val_x: val_x
+    :param val_y: val_y
     :param cross_validator: A cross validation function.
     :return: Selected best combination, and a list of tuples containing a combination and its corresponding result
     """
@@ -74,7 +79,7 @@ def get_best_model_parameter(
         for key_index in range(len(combination)):
             combination_input[model_parameter_keys[key_index]] = combination[key_index]
         m = model(**combination_input)
-        result = cross_validator(x, y, 5, m)
+        result = cross_validator(x, y, 5, m, val_x, val_y)
 
         results += [(combination_input, result)]
 
@@ -95,7 +100,37 @@ def get_best_model_parameter(
     return best_combination, results
 
 
-def cross_validate(x: np.ndarray, y: np.ndarray, n_fold: int, model: LearningModel) -> CrossValidationMean:
+def cross_validate(
+        x: np.ndarray,
+        y: np.ndarray,
+        n_fold: int,
+        model: LearningModel,
+        val_x: np.ndarray = None,
+        val_y: np.ndarray = None,
+) -> CrossValidationMean:
+    if val_x and val_y:
+        return cross_validate_with_val_data(x, y, model, val_x, val_y)
+    else:
+        return cross_validate_with_n_fold(x, y, n_fold, model)
+
+
+def cross_validate_with_val_data(
+        x: np.ndarray,
+        y: np.ndarray,
+        model: LearningModel,
+        val_x: np.ndarray = None,
+        val_y: np.ndarray = None,
+) -> CrossValidationMean:
+    # TODO: Handle cross validation when val is proven
+    pass
+
+
+def cross_validate_with_n_fold(
+        x: np.ndarray,
+        y: np.ndarray,
+        n_fold: int,
+        model: LearningModel,
+) -> CrossValidationMean:
     """
     Implement a cross validate algorithm
     to check how the model performs.
@@ -116,6 +151,7 @@ def cross_validate(x: np.ndarray, y: np.ndarray, n_fold: int, model: LearningMod
     val_macro_f1 = 0
     val_weighted_f1 = 0
     val_accuracy = 0
+
     for i in range(n_fold):
 
         # Computing the validation set and training set.
