@@ -1,6 +1,15 @@
 import numpy as np
 
 
+def sigmoid(x: np.ndarray) -> np.ndarray:
+    """
+    Standard sigmoid function.
+    :param x:
+    :return:
+    """
+    return 1. / (1 + np.exp(-x))
+
+
 def cartesian(arrays, out=None):
     """
     Generate a cartesian product of input arrays.
