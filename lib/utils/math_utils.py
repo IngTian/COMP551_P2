@@ -7,7 +7,13 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     :param x:
     :return:
     """
-    return 1. / (1 + np.exp(-x))
+    # Convert x to float128
+    x = np.float128(x)
+
+    value_too_small_mask = -x > np.log(np.finfo(np.float128).max)
+    x[value_too_small_mask] = 0.0
+
+    return 1.0 / (1.0 + np.exp(-x))
 
 
 def cartesian(arrays, out=None):

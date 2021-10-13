@@ -16,7 +16,7 @@ if __name__ == '__main__':
     params = {
         "learning_rate": [0.01, 0.05, 0.1, 0.15, 0.2, 0.3],
         "max_iterations": [100, 300, 500, 1000, 2000, 5000, 10000, 50000, 100000],
-        "mini_batch_ratio": [1, 0.01, 0.02, 0.05, 0.1, 0.2, 0.4, 0.5],
+        "mini_batch": [1, 8, 32, 64, 100],
         "momentum": [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.1],
         "update_weight_method": [
             UpdateWeightMethod.REGULAR,

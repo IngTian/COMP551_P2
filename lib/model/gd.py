@@ -20,7 +20,7 @@ class LogisticRegression(LearningModel):
             epsilon: float = 1e-4,
             max_iterations: int = 1e5,
             verbose: bool = True,
-            mini_batch_ratio: float = 1,
+            mini_batch: int = 1,
             momentum: float = None,
             update_weight_method: UpdateWeightMethod = UpdateWeightMethod.REGULAR
     ):
@@ -28,7 +28,7 @@ class LogisticRegression(LearningModel):
         self.learning_rate = learning_rate
         self.epsilon = epsilon  # to get the tolerance for the norm of gradients
         self.max_iterations = max_iterations  # maximum number of iteration of gradient descent
-        self.mini_batch_ratio = mini_batch_ratio
+        self.mini_batch = mini_batch
         self.momentum = momentum
         self.update_weights_method = update_weight_method
         self.verbose = verbose
@@ -100,17 +100,16 @@ class LogisticRegression(LearningModel):
         :return: A list of segmented batches.
         """
         complete_data = np.append(x if x.ndim > 1 else x[:, None], y if y.ndim > 1 else y[:, None], axis=1)
-        batch_size = int(x.shape[0] * self.mini_batch_ratio)
 
-        if batch_size > x.shape[0]:
-            raise ValueError("Batch size is larger than the number of instances.")
+        if self.mini_batch > x.shape[0]:
+            return [(x, y)]
 
         result = list()
 
         while complete_data.shape[0] > 0:
-            if complete_data.shape[0] >= batch_size:
-                result.append((complete_data[:batch_size, :-1], complete_data[:batch_size, -1]))
-                complete_data = complete_data[batch_size:]
+            if complete_data.shape[0] >= self.mini_batch:
+                result.append((complete_data[:self.mini_batch, :-1], complete_data[:self.mini_batch, -1]))
+                complete_data = complete_data[self.mini_batch:]
 
         return result
 
@@ -145,8 +144,8 @@ class LogisticRegression(LearningModel):
                 self.max_iterations = v
             elif k == 'verbose':
                 self.verbose = v
-            elif k == 'mini_batch_ratio':
-                self.mini_batch_ratio = v
+            elif k == 'mini_batch':
+                self.mini_batch = v
             elif k == 'momentum':
                 self.momentum = v
             elif k == 'update_weights_method':
