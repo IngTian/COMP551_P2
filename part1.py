@@ -3,6 +3,7 @@ from lib.utils.utils import get_best_model_parameter, cross_validate
 from lib.model.gd import UpdateWeightMethod
 from lib.model.gd import LogisticRegression
 import pprint as pp
+import json
 from simple_chalk import chalk
 
 if __name__ == '__main__':
@@ -40,6 +41,6 @@ if __name__ == '__main__':
     pp.pprint(results)
 
     # Write results to a file
-    f = open("../Result-Part1.txt", 'w')
-    f.write(str(results))
+    f = open("./output/part1.json", 'w')
+    f.write(json.dumps(results, indent=4))
     f.close()
