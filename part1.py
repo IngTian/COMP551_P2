@@ -2,6 +2,8 @@ from lib.utils.io_utils import read_csv
 from lib.utils.utils import get_best_model_parameter, cross_validate
 from lib.model.gd import UpdateWeightMethod
 from lib.model.gd import LogisticRegression
+import pprint as pp
+from simple_chalk import chalk
 
 if __name__ == '__main__':
     # region Read Data
@@ -31,3 +33,8 @@ if __name__ == '__main__':
         val_x=val_data[:, :-1],
         val_y=val_data[:, -1]
     )
+
+    print(f'{chalk.bold("-" * 15 + "BEST PARAMETERS FOUND" + "-" * 15)}\n')
+    pp.pprint(best_param)
+    print(f'{chalk.bold("-" * 15 + "ALL COMBINATION DATA" + "-" * 15)}\n')
+    pp.pprint(results)

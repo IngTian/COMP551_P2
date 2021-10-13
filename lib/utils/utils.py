@@ -43,7 +43,7 @@ def get_best_model_parameter(
         cross_validator: Callable[
             [np.ndarray, np.ndarray, int, LearningModel, np.ndarray, np.ndarray], CrossValidationMean],
         verbose=True,
-        method='f1',
+        method='accuracy',
         val_x: np.ndarray = None,
         val_y: np.ndarray = None,
 ) -> Tuple[Dict[str, Any], List[Tuple[Dict[str, Any], Dict[str, Any]]]]:
