@@ -19,7 +19,7 @@ class LogisticRegression(LearningModel):
             learning_rate: float = .1,
             epsilon: float = 1e-4,
             max_iterations: int = 1e5,
-            verbose: bool = True,
+            verbose: bool = False,
             mini_batch: int = 1,
             momentum: float = None,
             update_weight_method: UpdateWeightMethod = UpdateWeightMethod.REGULAR
