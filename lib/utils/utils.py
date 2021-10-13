@@ -1,5 +1,5 @@
-from utils.math_utils import cartesian
-from types.types import *
+from lib.utils.math_utils import cartesian
+from lib.types.types import *
 from typing import List, Tuple, Callable, Dict, Any
 from sklearn.metrics import classification_report
 import numpy as np
@@ -46,7 +46,7 @@ def get_best_model_parameter(
         method='f1',
         val_x: np.ndarray = None,
         val_y: np.ndarray = None,
-) -> Tuple[(Dict[str, Any], List), List[Tuple[Dict[str, Any], Dict[str, Any]]]]:
+) -> Tuple[Dict[str, Any], List[Tuple[Dict[str, Any], Dict[str, Any]]]]:
     """
     Use a grid search to search for
     all possible combinations in the
@@ -108,7 +108,7 @@ def cross_validate(
         val_x: np.ndarray = None,
         val_y: np.ndarray = None,
 ) -> CrossValidationMean:
-    if val_x and val_y:
+    if val_x is not None and val_y is not None:
         return cross_validate_with_val_data(x, y, model, val_x, val_y)
     else:
         return cross_validate_with_n_fold(x, y, n_fold, model)

@@ -12,15 +12,6 @@ class ModelPerformanceReport(TypedDict):
     training_weighted_f1: float
 
 
-LoggingLevel = Union[
-    logging.INFO,
-    logging.DEBUG,
-    logging.WARNING,
-    logging.ERROR,
-    logging.CRITICAL
-]
-
-
 class ParameterEffectsCurve(TypedDict):
     validation_accuracy: List[float]
     validation_macro_f1: List[float]
@@ -39,7 +30,7 @@ AllPossibleModelParameters = Dict[str, List[Any]]
 
 class LearningModel:
 
-    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> bool:
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs):
         pass
 
     def predict(self, x: np.ndarray) -> np.ndarray:
