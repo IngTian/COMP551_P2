@@ -38,3 +38,8 @@ if __name__ == '__main__':
     pp.pprint(best_param)
     print(f'{chalk.bold("-" * 15 + "ALL COMBINATION DATA" + "-" * 15)}\n')
     pp.pprint(results)
+
+    # Write results to a file
+    f = open("../Result-Part1.txt", 'w')
+    f.write(str(results))
+    f.close()

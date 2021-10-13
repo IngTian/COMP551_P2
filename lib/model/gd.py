@@ -100,6 +100,7 @@ class LogisticRegression(LearningModel):
         :return: A list of segmented batches.
         """
         complete_data = np.append(x if x.ndim > 1 else x[:, None], y if y.ndim > 1 else y[:, None], axis=1)
+        np.random.shuffle(complete_data)
 
         if self.mini_batch > x.shape[0]:
             return [(x, y)]
