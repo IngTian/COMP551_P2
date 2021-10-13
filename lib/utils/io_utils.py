@@ -22,7 +22,8 @@ def read_csv(
     """
 
     df = pd.read_csv(file_path)
-    df.columns = name_of_columns
+    if name_of_columns:
+        df.columns = name_of_columns
 
     if verbose:
         print(f'{chalk.bold.greenBright("The data set has successfully been loaded.")}\n'

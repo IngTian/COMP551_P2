@@ -1,5 +1,5 @@
-from utils.math_utils import cartesian
-from types.types import *
+from lib.utils.math_utils import cartesian
+from lib.types.types import *
 from typing import List, Tuple, Callable, Dict, Any
 from sklearn.metrics import classification_report
 import numpy as np
@@ -43,10 +43,10 @@ def get_best_model_parameter(
         cross_validator: Callable[
             [np.ndarray, np.ndarray, int, LearningModel, np.ndarray, np.ndarray], CrossValidationMean],
         verbose=True,
-        method='f1',
+        method='accuracy',
         val_x: np.ndarray = None,
         val_y: np.ndarray = None,
-) -> Tuple[(Dict[str, Any], List), List[Tuple[Dict[str, Any], Dict[str, Any]]]]:
+) -> Tuple[Dict[str, Any], List[Tuple[Dict[str, Any], Dict[str, Any]]]]:
     """
     Use a grid search to search for
     all possible combinations in the
@@ -108,7 +108,7 @@ def cross_validate(
         val_x: np.ndarray = None,
         val_y: np.ndarray = None,
 ) -> CrossValidationMean:
-    if val_x and val_y:
+    if val_x is not None and val_y is not None:
         return cross_validate_with_val_data(x, y, model, val_x, val_y)
     else:
         return cross_validate_with_n_fold(x, y, n_fold, model)
@@ -121,8 +121,24 @@ def cross_validate_with_val_data(
         val_x: np.ndarray = None,
         val_y: np.ndarray = None,
 ) -> CrossValidationMean:
-    # TODO: Handle cross validation when val is proven
-    pass
+    model.fit(x, y)
+    training_predictions = model.predict(x)
+    training_report = classification_report(y, training_predictions.astype(int),
+                                            output_dict=True, zero_division=0)
+
+    validation_predictions = model.predict(val_x)
+    validation_report = classification_report(val_y, validation_predictions.astype(int),
+                                              output_dict=True, zero_division=0)
+
+    return {
+        "training macro f1": training_report["macro avg"]["f1-score"],
+        "training weighted f1": training_report["weighted avg"]["f1-score"],
+        "training accuracy": training_report["accuracy"],
+
+        "accuracy": validation_report["macro avg"]["f1-score"],
+        "macro f1": validation_report["weighted avg"]["f1-score"],
+        "weighted f1": validation_report["accuracy"],
+    }
 
 
 def cross_validate_with_n_fold(

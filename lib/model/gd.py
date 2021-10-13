@@ -1,8 +1,9 @@
 import numpy as np
-from utils.math_utils import sigmoid
+from lib.utils.math_utils import sigmoid
 from typing import Dict, Tuple, List, Any
 from enum import Enum
 from simple_chalk import chalk
+from lib.types.types import LearningModel
 
 
 class UpdateWeightMethod(Enum):
@@ -10,7 +11,7 @@ class UpdateWeightMethod(Enum):
     MOMENTUM = 2
 
 
-class LogisticRegression:
+class LogisticRegression(LearningModel):
 
     def __init__(
             self,
@@ -36,7 +37,7 @@ class LogisticRegression:
         self.weights = None
         self.history_gradients = None
 
-    def fit(self, x, y):
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> LearningModel:
 
         # Prepare X
         if x.ndim == 1:
@@ -78,14 +79,12 @@ class LogisticRegression:
         :return:
         """
         if self.update_weights_method == UpdateWeightMethod.MOMENTUM:
-            # TODO: Use momentum to update weights
-            beta = momentum
-            T = self.history_gradients.size
-            for t in np.arange(1, T):
-                self.weights += self.history_gradients[-t] * (1 - beta) * beta**(T - t)
+            beta = self.momentum
+            his = len(self.history_gradients)
+            for t in np.arange(1, his):
+                self.weights += self.history_gradients[-t] * (1 - beta) * beta ** (his - t)
         elif self.update_weights_method == UpdateWeightMethod.REGULAR:
-            # TODO: Update weights regularly
-            self.weights = self.weights - self.learning_rate * current_gradient 
+            self.weights = self.weights - self.learning_rate * raw_gradients
 
     def separate_training_data(
             self,
