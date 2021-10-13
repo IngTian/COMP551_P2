@@ -7,8 +7,6 @@ from simple_chalk import chalk
 
 np.set_printoptions(linewidth=200)
 
-CrossValidationMean = Dict[str, Any]
-
 
 def preprocess_data(x: np.ndarray,
                     y: np.ndarray,
