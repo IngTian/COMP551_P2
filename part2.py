@@ -160,7 +160,9 @@ if __name__ == '__main__':
     ]
 
     processed_data_sets: List[Tuple[np.ndarray, np.ndarray, np.ndarray]] = list()
-    for preprocess in preprocesses:
+
+    print(f'{chalk.bold("-" * 15 + "START PREPROCESSING" + "-" * 15)}\n')
+    for preprocess in tqdm(preprocesses):
         train = preprocess_data(
             np.copy(training_data[:, :-1]),
             np.copy(training_data[:, -1]),
