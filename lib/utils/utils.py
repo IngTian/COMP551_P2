@@ -4,10 +4,9 @@ from typing import List, Tuple, Callable, Dict, Any
 from sklearn.metrics import classification_report
 import numpy as np
 from simple_chalk import chalk
+from tqdm import tqdm
 
 np.set_printoptions(linewidth=200)
-
-CrossValidationMean = Dict[str, Any]
 
 
 def preprocess_data(x: np.ndarray,
@@ -64,6 +63,8 @@ def get_best_model_parameter(
     :param cross_validator: A cross validation function.
     :return: Selected best combination, and a list of tuples containing a combination and its corresponding result
     """
+    if verbose:
+        print(f'{chalk.bold("-" * 15 + "START FINDING BEST PARAMETERS" + "-" * 15)}\n')
 
     model_parameter_keys = [*model_parameters.keys()]
     all_combinations = cartesian([model_parameters[key] for key in model_parameter_keys])
@@ -74,7 +75,7 @@ def get_best_model_parameter(
     best_accuracy = 0
     results = []
 
-    for combination in all_combinations:
+    for combination in tqdm(all_combinations):
         combination_input = dict()
         for key_index in range(len(combination)):
             combination_input[model_parameter_keys[key_index]] = combination[key_index]
