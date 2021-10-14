@@ -1,14 +1,14 @@
 import numpy as np
 from lib.utils.math_utils import sigmoid
 from typing import Dict, Tuple, List, Any
-from enum import Enum
+from enum import IntEnum
 from simple_chalk import chalk
 from lib.types.types import LearningModel
 
 
-class UpdateWeightMethod(Enum):
-    REGULAR = 1
-    MOMENTUM = 2
+class UpdateWeightMethod(IntEnum):
+    REGULAR = 0
+    MOMENTUM = 1
 
 
 class LogisticRegression(LearningModel):
@@ -111,6 +111,9 @@ class LogisticRegression(LearningModel):
             if complete_data.shape[0] >= self.mini_batch:
                 result.append((complete_data[:self.mini_batch, :-1], complete_data[:self.mini_batch, -1]))
                 complete_data = complete_data[self.mini_batch:]
+            else:
+                result.append((complete_data[:, :-1], complete_data[:, -1]))
+                break
 
         return result
 

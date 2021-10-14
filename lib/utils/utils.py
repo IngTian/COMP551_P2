@@ -8,6 +8,8 @@ from tqdm import tqdm
 
 np.set_printoptions(linewidth=200)
 
+CrossValidationMean = Dict[str, Any]
+
 
 def preprocess_data(x: np.ndarray,
                     y: np.ndarray,
@@ -75,7 +77,7 @@ def get_best_model_parameter(
     best_accuracy = 0
     results = []
 
-    for combination in tqdm(all_combinations):
+    for combination in tqdm(all_combinations, leave=True):
         combination_input = dict()
         for key_index in range(len(combination)):
             combination_input[model_parameter_keys[key_index]] = combination[key_index]
