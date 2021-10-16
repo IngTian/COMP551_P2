@@ -37,7 +37,7 @@ class LogisticRegression(LearningModel):
         self.weights = None
         self.history_gradients = None
 
-    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> LearningModel:
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> Tuple[LearningModel, int]:
 
         # Prepare X
         if x.ndim == 1:
@@ -70,7 +70,7 @@ class LogisticRegression(LearningModel):
                 f'NUMBER OF ITERATIONS: {chalk.green.bold(iterations_run)} FINAL GRADIENT NORM: {chalk.yellowBright.bold(np.linalg.norm(current_gradient))}\n'
                 f'FINAL WEIGHTS: {chalk.blueBright(self.weights)}\n')
 
-        return self
+        return self, iterations_run
 
     def update_weights(self, raw_gradients: np.ndarray) -> None:
         """
