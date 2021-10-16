@@ -124,7 +124,7 @@ def cross_validate_with_val_data(
         val_x: np.ndarray = None,
         val_y: np.ndarray = None,
 ) -> CrossValidationMean:
-    _, number_of_iterations = model.fit(x, y)
+    _, number_of_iterations, epoch_run = model.fit(x, y)
     training_predictions = model.predict(x)
     training_report = classification_report(y.astype(int), training_predictions.astype(int),
                                             output_dict=True, zero_division=0)
@@ -138,6 +138,7 @@ def cross_validate_with_val_data(
         "training weighted f1": training_report["weighted avg"]["f1-score"],
         "training accuracy": training_report["accuracy"],
         "number_of_iterations_to_converge": number_of_iterations,
+        "number_of_epochs_to_converge": epoch_run,
         "macro f1": validation_report["macro avg"]["f1-score"],
         "weighted f1": validation_report["weighted avg"]["f1-score"],
         "accuracy": validation_report["accuracy"],
