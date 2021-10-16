@@ -17,8 +17,8 @@ class LogisticRegression(LearningModel):
             self,
             add_bias: bool = True,
             learning_rate: float = .1,
-            epsilon: float = 1e-4,
-            max_iterations: int = 1e5,
+            epsilon: float = 1e-2,
+            max_iterations: int = 1e2,
             verbose: bool = False,
             mini_batch: int = 1,
             momentum: float = None,
@@ -99,11 +99,11 @@ class LogisticRegression(LearningModel):
         :param y: y
         :return: A list of segmented batches.
         """
+        if self.mini_batch >= x.shape[0]:
+            return [(x, y)]
+
         complete_data = np.append(x if x.ndim > 1 else x[:, None], y if y.ndim > 1 else y[:, None], axis=1)
         np.random.shuffle(complete_data)
-
-        if self.mini_batch > x.shape[0]:
-            return [(x, y)]
 
         result = list()
 
@@ -131,7 +131,11 @@ class LogisticRegression(LearningModel):
             x = np.column_stack([x, np.ones(number_of_tests)])
 
         # Make predictions
-        return sigmoid(np.dot(x, self.weights))
+        result = sigmoid(np.dot(x, self.weights))
+        positive = result > 0.5
+        result[positive] = 1
+        result[~positive] = 0
+        return result.astype(int)
 
     def get_params(self):
         return self.__dict__
