@@ -234,7 +234,7 @@ if __name__ == '__main__':
         results[name_of_the_preprocess] = validation_report
 
     # Save results
-    print(f'{chalk.bold("-" * 15 + "COMPLETED" + "-" * 15)}\n')
+    print(f'\n\n{chalk.bold("-" * 15 + "COMPLETED" + "-" * 15)}\n')
     f = open("./output/part2.json", 'w')
     f.write(json.dumps(results, indent=4))
     f.close()
