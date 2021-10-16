@@ -78,13 +78,19 @@ class LogisticRegression(LearningModel):
         :param raw_gradients:
         :return:
         """
-        if self.update_weights_method == UpdateWeightMethod.MOMENTUM:
-            beta = self.momentum
-            his = len(self.history_gradients)
-            for t in np.arange(1, his):
-                self.weights += self.history_gradients[-t] * (1 - beta) * beta ** (his - t)
-        elif self.update_weights_method == UpdateWeightMethod.REGULAR:
-            self.weights = self.weights - self.learning_rate * raw_gradients
+
+        g = self.update_weights_momentum(len(self.history_gradients)) \
+            if self.update_weights_method == UpdateWeightMethod.MOMENTUM \
+            else raw_gradients
+
+        self.weights = self.weights - self.learning_rate * g
+
+    def update_weights_momentum(self, t: int) -> np.ndarray:
+        if t == 1:
+            return (1 - self.momentum) * self.history_gradients[t - 1]
+        else:
+            return self.momentum * self.update_weights_momentum(t - 1) + (1 - self.momentum) * self.history_gradients[
+                t - 1]
 
     def separate_training_data(
             self,
