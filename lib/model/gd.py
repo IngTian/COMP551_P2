@@ -11,8 +11,7 @@ class LogisticRegression(LearningModel):
             self,
             add_bias: bool = True,
             learning_rate: float = .1,
-            epsilon: float = 1e-2,
-            max_iterations: int = 1e2,
+            epsilon: float = 1e-4,
             verbose: bool = False,
             mini_batch: int = None,
             momentum: float = None,
@@ -21,7 +20,6 @@ class LogisticRegression(LearningModel):
         self.add_bias = add_bias
         self.learning_rate = learning_rate
         self.epsilon = epsilon  # to get the tolerance for the norm of gradients
-        self.max_iterations = max_iterations  # maximum number of iteration of gradient descent
         self.mini_batch = mini_batch
         self.momentum = momentum
         self.verbose = verbose
@@ -31,7 +29,7 @@ class LogisticRegression(LearningModel):
         self.weights = None
         self.history_gradients = None
 
-    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> Tuple[LearningModel, int]:
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> Tuple[LearningModel, int, float, bool]:
 
         # Prepare X
         if x.ndim == 1:
@@ -44,7 +42,7 @@ class LogisticRegression(LearningModel):
         number_of_instances, number_of_features = x.shape
         self.weights = np.zeros(number_of_features)
         self.history_gradients = list()
-        current_gradient, epoch_run = np.inf, 0
+        raw_gradients, epoch_run = np.inf, 0
 
         while epoch_run < self.epoch:
             # Get the segmented training
@@ -52,21 +50,20 @@ class LogisticRegression(LearningModel):
             training_sets = self.separate_training_data(x, y)
 
             for batch in training_sets:
-                current_gradient = self.gradient(batch[0], batch[1])
-                self.history_gradients.append(current_gradient)
-                self.update_weights(current_gradient)
+                raw_gradients = self.gradient(batch[0], batch[1])
+                self.update_weights(raw_gradients)
 
             epoch_run += 1
-            if np.linalg.norm(current_gradient) <= self.epsilon:
+            if np.linalg.norm(raw_gradients) <= self.epsilon:
                 break
 
         if self.verbose:
             print(
                 f'{chalk.bold("-" * 15 + "COMPLETED FITTING" + "-" * 15)}\n'
-                f'NUMBER OF EPOCHS: {chalk.green.bold(epoch_run)} FINAL GRADIENT NORM: {chalk.yellowBright.bold(np.linalg.norm(current_gradient))}\n'
+                f'NUMBER OF EPOCHS: {chalk.green.bold(epoch_run)} FINAL GRADIENT NORM: {chalk.yellowBright.bold(np.linalg.norm(raw_gradients))}\n'
                 f'FINAL WEIGHTS: {chalk.blueBright(self.weights)}\n')
 
-        return self, epoch_run
+        return self, epoch_run, np.linalg.norm(raw_gradients), np.linalg.norm(raw_gradients) <= self.epsilon
 
     def update_weights(self, raw_gradients: np.ndarray) -> None:
         """
@@ -75,18 +72,21 @@ class LogisticRegression(LearningModel):
         :return:
         """
 
-        g = self.update_weights_momentum(len(self.history_gradients)) \
+        g = self.update_weights_momentum(len(self.history_gradients), raw_gradients) \
             if self.momentum \
             else raw_gradients
 
-        self.weights = self.weights - self.learning_rate * g
+        g = self.learning_rate * g
 
-    def update_weights_momentum(self, t: int) -> np.ndarray:
-        if t == 1:
-            return (1 - self.momentum) * self.history_gradients[t - 1]
+        self.history_gradients.append(g)
+
+        self.weights = self.weights - g
+
+    def update_weights_momentum(self, t: int, raw_gradients: np.ndarray) -> np.ndarray:
+        if t == 0:
+            return (1 - self.momentum) * raw_gradients
         else:
-            return self.momentum * self.update_weights_momentum(t - 1) + (1 - self.momentum) * self.history_gradients[
-                t - 1]
+            return self.momentum * self.history_gradients[t - 1] + (1 - self.momentum) * raw_gradients
 
     def separate_training_data(
             self,
@@ -150,8 +150,6 @@ class LogisticRegression(LearningModel):
                 self.learning_rate = v
             elif k == 'epsilon':
                 self.epsilon = v
-            elif k == 'max_iterations':
-                self.max_iterations = v
             elif k == 'verbose':
                 self.verbose = v
             elif k == 'mini_batch':
