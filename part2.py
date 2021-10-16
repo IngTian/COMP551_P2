@@ -4,6 +4,7 @@ from lib.utils.io_utils import read_csv
 from lib.utils.utils import preprocess_data, get_best_model_parameter, cross_validate
 from typing import List, Tuple, Callable, Dict, Any, Union
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import classification_report
 from sklearn.linear_model import LogisticRegression
 from tqdm import tqdm
 import nltk
@@ -17,13 +18,16 @@ import numpy as np
 from simple_chalk import chalk
 
 
+MAX_FEATURES = 2000
+
+
 # region Preprocess Data Functions
 def preprocess_count_uni_gram_occurrence(
         x: np.ndarray,
         y: np.ndarray,
         verbose: bool,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    vectorizer = CountVectorizer()
+    vectorizer = CountVectorizer(max_features=MAX_FEATURES)
 
     transformed_x = vectorizer.fit_transform(x[:, 0]).toarray()
     if verbose:
@@ -39,7 +43,7 @@ def preprocess_count_uni_gram_occurrence_excluding_stop_words(
         y: np.ndarray,
         verbose: bool,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    vectorizer = CountVectorizer(stop_words=stopwords.words('english'))
+    vectorizer = CountVectorizer(stop_words=stopwords.words('english'), max_features=MAX_FEATURES)
     transformed_x = vectorizer.fit_transform(x[:, 0]).toarray()
     if verbose:
         print(f'{chalk.greenBright("Completed Extract Features with Unigram Occurrence Excluding Stopwords")}\n'
@@ -54,12 +58,13 @@ def preprocess_count_uni_gram_occurrence_with_stemming(
         verbose: bool,
 ) -> Tuple[np.ndarray, np.ndarray]:
     stemming_helper = SnowballStemmer('english')
-    vectorizer = CountVectorizer()
+    vectorizer = CountVectorizer(max_features=MAX_FEATURES)
     vectorizer.fit(x[:, 0])
     analyzer = vectorizer.build_analyzer()
 
     new_vectorizer = CountVectorizer(
-        analyzer=lambda s: (stemming_helper.stem(word) for word in analyzer(s))
+        analyzer=lambda s: (stemming_helper.stem(word) for word in analyzer(s)),
+        max_features=MAX_FEATURES
     )
     transformed_x = new_vectorizer.fit_transform(x[:, 0]).toarray()
     if verbose:
@@ -75,12 +80,13 @@ def preprocess_count_uni_gram_occurrence_with_lemmatization(
         verbose: bool,
 ) -> Tuple[np.ndarray, np.ndarray]:
     lemmatizer = WordNetLemmatizer()
-    vectorizer = CountVectorizer()
+    vectorizer = CountVectorizer(max_features=MAX_FEATURES)
     vectorizer.fit(x[:, 0])
     analyzer = vectorizer.build_analyzer()
 
     new_vectorizer = CountVectorizer(
-        analyzer=lambda s: (lemmatizer.lemmatize(word) for word in analyzer(s))
+        analyzer=lambda s: (lemmatizer.lemmatize(word) for word in analyzer(s)),
+        max_features=MAX_FEATURES
     )
     transformed_x = new_vectorizer.fit_transform(x[:, 0]).toarray()
     if verbose:
@@ -95,7 +101,7 @@ def preprocess_count_bigram_occurrence(
         y: np.ndarray,
         verbose: bool,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    vectorizer = CountVectorizer(ngram_range=(2, 2))
+    vectorizer = CountVectorizer(ngram_range=(2, 2), max_features=MAX_FEATURES)
     transformed_x = vectorizer.fit_transform(x[:, 0]).toarray()
     if verbose:
         print(f'{chalk.greenBright("Completed Extract Features with Bigram Occurrence")}\n'
@@ -111,7 +117,8 @@ def preprocess_count_bigram_occurrence_excluding_stop_words(
 ) -> Tuple[np.ndarray, np.ndarray]:
     vectorizer = CountVectorizer(
         stop_words=stopwords.words('english'),
-        ngram_range=(2, 2)
+        ngram_range=(2, 2),
+        max_features=MAX_FEATURES
     )
     transformed_x = vectorizer.fit_transform(x[:, 0]).toarray()
     if verbose:
@@ -126,7 +133,7 @@ def preprocess_uni_bi(
         y: np.ndarray,
         verbose: bool,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    vectorizer = CountVectorizer(ngram_range=(1, 2))
+    vectorizer = CountVectorizer(ngram_range=(1, 2), max_features=MAX_FEATURES)
     transformed_x = vectorizer.fit_transform(x[:, 0]).toarray()
     if verbose:
         print(f'{chalk.greenBright("Completed Extract Features with Bigram Occurrence")}\n'
@@ -206,10 +213,6 @@ if __name__ == '__main__':
     # Run grid search for each preprocessed data
     # and pick the best combination
     results: Dict[str, Any] = dict()
-    params = {
-        "max_iter": [500, 1000, 5000, 10000],
-        "multi_class": ["ovr"],
-    }
 
     print(f'{chalk.bold("-" * 15 + "STARTING RUNNING TESTS" + "-" * 15)}\n')
 
@@ -217,17 +220,18 @@ if __name__ == '__main__':
         preprocess = preprocesses[preprocess_idx]
         train_data, val_data, test_data = processed_data_sets[preprocess_idx]
         name_of_the_preprocess = preprocess.__name__
-        preprocess_performance = get_best_model_parameter(
-            params,
-            LogisticRegression,
-            train_data[:, :-1],
-            train_data[:, -1],
-            cross_validate,
-            val_x=val_data[:, :-1],
-            val_y=val_data[:, -1]
+
+        model = LogisticRegression(max_iter=2000)
+        model.fit(train_data[:, :-1].astype(int), train_data[:, -1].astype(int))
+
+        validation_report = classification_report(
+            val_data[:, -1].astype(int),
+            model.predict(val_data[:, :-1].astype(int)),
+            output_dict=True,
+            zero_division=0
         )
 
-        results[name_of_the_preprocess] = preprocess_performance
+        results[name_of_the_preprocess] = validation_report
 
     # Save results
     print(f'{chalk.bold("-" * 15 + "COMPLETED" + "-" * 15)}\n')
