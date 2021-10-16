@@ -39,7 +39,7 @@ class LogisticRegression(LearningModel):
         self.weights = None
         self.history_gradients = None
 
-    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> Tuple[LearningModel, int, int]:
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> Tuple[LearningModel, int]:
 
         # Prepare X
         if x.ndim == 1:
@@ -52,42 +52,29 @@ class LogisticRegression(LearningModel):
         number_of_instances, number_of_features = x.shape
         self.weights = np.zeros(number_of_features)
         self.history_gradients = list()
-        current_gradient, iterations_run, epoch_run = np.inf, 0, 0
+        current_gradient, epoch_run = np.inf, 0
 
-        if self.mini_batch:
-            while epoch_run < self.epoch:
-                # Get the segmented training
-                # sets based on batch size.
-                training_sets = self.separate_training_data(x, y)
-                should_quit = False
+        while epoch_run < self.epoch:
+            # Get the segmented training
+            # sets based on batch size.
+            training_sets = self.separate_training_data(x, y)
 
-                for batch in training_sets:
-                    current_gradient = self.gradient(batch[0], batch[1])
-                    self.history_gradients.append(current_gradient)
-                    self.update_weights(current_gradient)
-                    if np.linalg.norm(current_gradient) <= self.epsilon:
-                        should_quit = True
-                        break
-
-                epoch_run += 1
-                if should_quit:
-                    break
-        else:
-            training_sets = (x, y)
-            while np.linalg.norm(current_gradient) > self.epsilon and iterations_run < self.max_iterations:
-                training_set = training_sets[iterations_run % len(training_sets)]
-                current_gradient = self.gradient(training_set[0], training_set[1])
+            for batch in training_sets:
+                current_gradient = self.gradient(batch[0], batch[1])
                 self.history_gradients.append(current_gradient)
                 self.update_weights(current_gradient)
-                iterations_run += 1
+
+            epoch_run += 1
+            if np.linalg.norm(current_gradient) <= self.epsilon:
+                break
 
         if self.verbose:
             print(
                 f'{chalk.bold("-" * 15 + "COMPLETED FITTING" + "-" * 15)}\n'
-                f'NUMBER OF ITERATIONS: {chalk.green.bold(iterations_run)} FINAL GRADIENT NORM: {chalk.yellowBright.bold(np.linalg.norm(current_gradient))}\n'
+                f'NUMBER OF EPOCHS: {chalk.green.bold(epoch_run)} FINAL GRADIENT NORM: {chalk.yellowBright.bold(np.linalg.norm(current_gradient))}\n'
                 f'FINAL WEIGHTS: {chalk.blueBright(self.weights)}\n')
 
-        return self, iterations_run, epoch_run
+        return self, epoch_run
 
     def update_weights(self, raw_gradients: np.ndarray) -> None:
         """
