@@ -1,14 +1,8 @@
 import numpy as np
 from lib.utils.math_utils import sigmoid
 from typing import Dict, Tuple, List, Any
-from enum import IntEnum
 from simple_chalk import chalk
 from lib.types.types import LearningModel
-
-
-class UpdateWeightMethod(IntEnum):
-    REGULAR = 0
-    MOMENTUM = 1
 
 
 class LogisticRegression(LearningModel):
@@ -23,7 +17,6 @@ class LogisticRegression(LearningModel):
             mini_batch: int = None,
             momentum: float = None,
             epoch: int = None,
-            update_weight_method: UpdateWeightMethod = UpdateWeightMethod.REGULAR
     ):
         self.add_bias = add_bias
         self.learning_rate = learning_rate
@@ -31,7 +24,6 @@ class LogisticRegression(LearningModel):
         self.max_iterations = max_iterations  # maximum number of iteration of gradient descent
         self.mini_batch = mini_batch
         self.momentum = momentum
-        self.update_weights_method = update_weight_method
         self.verbose = verbose
         self.epoch = epoch
 
@@ -84,7 +76,7 @@ class LogisticRegression(LearningModel):
         """
 
         g = self.update_weights_momentum(len(self.history_gradients)) \
-            if self.update_weights_method == UpdateWeightMethod.MOMENTUM \
+            if self.momentum \
             else raw_gradients
 
         self.weights = self.weights - self.learning_rate * g
@@ -166,8 +158,6 @@ class LogisticRegression(LearningModel):
                 self.mini_batch = v
             elif k == 'momentum':
                 self.momentum = v
-            elif k == 'update_weights_method':
-                self.update_weights_method = v
         return True
 
     def gradient(self, x, y):
