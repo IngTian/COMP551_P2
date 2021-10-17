@@ -139,7 +139,7 @@ def cross_validate_with_val_data(
         "training accuracy": training_report["accuracy"],
         "number_of_epochs_to_converge": epoch_run,
         "final_gradient_change": float(change),
-        "is_converged": is_converged,
+        "is_converged": bool(is_converged),
         "macro f1": validation_report["macro avg"]["f1-score"],
         "weighted f1": validation_report["weighted avg"]["f1-score"],
         "accuracy": validation_report["accuracy"],
