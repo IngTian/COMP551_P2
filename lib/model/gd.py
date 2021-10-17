@@ -11,7 +11,7 @@ class LogisticRegression(LearningModel):
             self,
             add_bias: bool = True,
             learning_rate: float = .1,
-            epsilon: float = 1e-3,
+            epsilon: float = 5e-3,
             verbose: bool = False,
             mini_batch: int = None,
             momentum: float = None,
