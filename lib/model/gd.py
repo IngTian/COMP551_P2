@@ -5,6 +5,10 @@ from simple_chalk import chalk
 from lib.types.types import LearningModel
 
 
+def calculate_accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
+    return float(np.count_nonzero(y_pred * y_true) / len(y_pred))
+
+
 class LogisticRegression(LearningModel):
 
     def __init__(
@@ -29,7 +33,18 @@ class LogisticRegression(LearningModel):
         self.weights = None
         self.history_gradients = None
 
-    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> Tuple[LearningModel, int, float, bool]:
+    def fit(
+            self,
+            x: np.ndarray,
+            y: np.ndarray,
+            **kwargs
+    ) -> Tuple[
+        LearningModel,
+        int,
+        float,
+        bool,
+        List[Tuple[int, float, float]]
+    ]:
 
         # Prepare X
         if x.ndim == 1:
@@ -39,10 +54,12 @@ class LogisticRegression(LearningModel):
             x = np.column_stack([x, np.ones(number_of_instances)])
 
         # Set up parameters
+        val_x, val_y = kwargs["val_x"], kwargs["val_y"]
         number_of_instances, number_of_features = x.shape
         self.weights = np.zeros(number_of_features)
         self.history_gradients = list()
         raw_gradients, epoch_run = np.inf, 0
+        accuracy_record = list()
 
         while epoch_run < self.epoch:
             # Get the segmented training
@@ -55,6 +72,15 @@ class LogisticRegression(LearningModel):
 
             epoch_run += 1
 
+            if epoch_run % 1e5 == 0:
+                accuracy_record.append(
+                    (
+                        epoch_run,
+                        calculate_accuracy(self.predict(x), y),
+                        calculate_accuracy(self.predict(val_x), val_y)
+                    )
+                )
+
             if np.linalg.norm(raw_gradients) <= self.epsilon:
                 break
 
@@ -65,7 +91,8 @@ class LogisticRegression(LearningModel):
                 f'GRADIENT CHANGE: {chalk.yellowBright.bold(np.linalg.norm(raw_gradients))}\n'
                 f'FINAL WEIGHTS: {chalk.blueBright(self.weights)}\n')
 
-        return self, epoch_run, np.linalg.norm(raw_gradients), np.linalg.norm(raw_gradients) <= self.epsilon
+        return self, epoch_run, np.linalg.norm(raw_gradients), np.linalg.norm(
+            raw_gradients) <= self.epsilon, accuracy_record
 
     def update_weights(self, raw_gradients: np.ndarray) -> None:
         """

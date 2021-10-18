@@ -124,7 +124,7 @@ def cross_validate_with_val_data(
         val_x: np.ndarray = None,
         val_y: np.ndarray = None,
 ) -> CrossValidationMean:
-    _, epoch_run, change, is_converged = model.fit(x, y)
+    _, epoch_run, change, is_converged, accuracy_report = model.fit(x, y, val_x=val_x, val_y=val_y)
     training_predictions = model.predict(x)
     training_report = classification_report(y.astype(int), training_predictions.astype(int),
                                             output_dict=True, zero_division=0)
@@ -140,6 +140,7 @@ def cross_validate_with_val_data(
         "number_of_epochs_to_converge": epoch_run,
         "final_gradient_change": float(change),
         "is_converged": bool(is_converged),
+        "accuracy_report": accuracy_report,
         "macro f1": validation_report["macro avg"]["f1-score"],
         "weighted f1": validation_report["weighted avg"]["f1-score"],
         "accuracy": validation_report["accuracy"],
