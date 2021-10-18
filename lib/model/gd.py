@@ -6,7 +6,7 @@ from lib.types.types import LearningModel
 
 
 def calculate_accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
-    return float(np.count_nonzero(y_pred * y_true) / len(y_pred))
+    return float(np.count_nonzero(y_pred == y_true) / len(y_pred))
 
 
 class LogisticRegression(LearningModel):
@@ -15,7 +15,7 @@ class LogisticRegression(LearningModel):
             self,
             add_bias: bool = True,
             learning_rate: float = .1,
-            epsilon: float = 3e-2,
+            epsilon: float = 2.5e-2,
             verbose: bool = False,
             mini_batch: int = None,
             momentum: float = None,
@@ -158,7 +158,7 @@ class LogisticRegression(LearningModel):
         if x.ndim == 1:
             x = x[:, None]
         number_of_tests = x.shape[0]
-        if self.add_bias:
+        if self.add_bias and x.shape[1] != len(self.weights):
             x = np.column_stack([x, np.ones(number_of_tests)])
 
         # Make predictions
