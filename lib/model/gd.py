@@ -54,16 +54,18 @@ class LogisticRegression(LearningModel):
                 self.update_weights(raw_gradients)
 
             epoch_run += 1
-            if self.loss(x, y) <= self.epsilon:
+
+            if np.linalg.norm(raw_gradients) <= self.epsilon:
                 break
 
         if self.verbose:
             print(
                 f'{chalk.bold("-" * 15 + "COMPLETED FITTING" + "-" * 15)}\n'
-                f'EPOCHS: {chalk.green.bold(epoch_run)} FINAL LOSS: {chalk.yellowBright.bold(self.loss(x, y))}\n'
+                f'EPOCHS: {chalk.green.bold(epoch_run)}\n'
+                f'GRADIENT CHANGE: {chalk.yellowBright.bold(np.linalg.norm(raw_gradients))}\n'
                 f'FINAL WEIGHTS: {chalk.blueBright(self.weights)}\n')
 
-        return self, epoch_run, self.loss(x, y), self.loss(x, y) <= self.epsilon
+        return self, epoch_run, np.linalg.norm(raw_gradients), np.linalg.norm(raw_gradients) <= self.epsilon
 
     def update_weights(self, raw_gradients: np.ndarray) -> None:
         """
