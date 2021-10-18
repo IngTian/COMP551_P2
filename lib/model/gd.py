@@ -54,16 +54,16 @@ class LogisticRegression(LearningModel):
                 self.update_weights(raw_gradients)
 
             epoch_run += 1
-            if np.linalg.norm(raw_gradients) <= self.epsilon:
+            if self.loss(x, y) <= self.epsilon:
                 break
 
         if self.verbose:
             print(
                 f'{chalk.bold("-" * 15 + "COMPLETED FITTING" + "-" * 15)}\n'
-                f'NUMBER OF EPOCHS: {chalk.green.bold(epoch_run)} FINAL GRADIENT NORM: {chalk.yellowBright.bold(np.linalg.norm(raw_gradients))}\n'
+                f'EPOCHS: {chalk.green.bold(epoch_run)} FINAL LOSS: {chalk.yellowBright.bold(self.loss(x, y))}\n'
                 f'FINAL WEIGHTS: {chalk.blueBright(self.weights)}\n')
 
-        return self, epoch_run, np.linalg.norm(raw_gradients), np.linalg.norm(raw_gradients) <= self.epsilon
+        return self, epoch_run, self.loss(x, y), self.loss(x, y) <= self.epsilon
 
     def update_weights(self, raw_gradients: np.ndarray) -> None:
         """
@@ -169,3 +169,7 @@ class LogisticRegression(LearningModel):
         yh = sigmoid(np.dot(x, self.weights))  # predictions  size N
         grad = np.dot(x.T, yh - y) / number_of_instances  # divide by N because cost is mean over N points
         return grad
+
+    def loss(self, x: np.ndarray, y: np.ndarray) -> float:
+        z = np.dot(x, self.weights)
+        return float(np.mean(y * np.log1p(np.exp(-z)) + (1 - y) * np.log1p(np.exp(z))))
