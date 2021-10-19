@@ -108,11 +108,9 @@ class LogisticRegression(LearningModel):
             if self.momentum \
             else raw_gradients
 
-        g = self.learning_rate * g
-
         self.history_gradients.append(g)
 
-        self.weights = self.weights - g
+        self.weights -= self.learning_rate * g
 
     def update_weights_momentum(self, t: int, raw_gradients: np.ndarray) -> np.ndarray:
         if t == 0:
