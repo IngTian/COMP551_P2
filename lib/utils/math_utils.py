@@ -7,12 +7,6 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     :param x:
     :return:
     """
-    # Convert x to float128
-    x = np.float128(x)
-
-    value_too_small_mask = -x > np.log(np.finfo(np.float128).max)
-    x[value_too_small_mask] = 0.0
-
     return 1.0 / (1.0 + np.exp(-x))
 
 

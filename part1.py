@@ -1,6 +1,5 @@
 from lib.utils.io_utils import read_csv
 from lib.utils.utils import get_best_model_parameter, cross_validate
-from lib.model.gd import UpdateWeightMethod
 from lib.model.gd import LogisticRegression
 import pprint as pp
 import json
@@ -15,14 +14,10 @@ if __name__ == '__main__':
     # endregion
 
     params = {
-        "learning_rate": [0.01, 0.05, 0.1, 0.15, 0.2, 0.3],
-        "max_iterations": [100, 300, 500, 1000, 2000, 5000, 10000, 50000, 100000],
-        "mini_batch": [1, 8, 32, 64, 100],
-        "momentum": [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.1],
-        "update_weight_method": [
-            UpdateWeightMethod.REGULAR,
-            UpdateWeightMethod.MOMENTUM
-        ]
+        "learning_rate": [1e-4, 2e-4, 3e-4, 5e-5, 1e-5],
+        "max_iterations": [100, 300, 10000, 50000, 100000],
+        "mini_batch": [None, 1, 10, 50, 100, 200, 300, 400, 600],
+        "momentum": [0.9, 0.8, 0.5, None],
     }
 
     best_param, results = get_best_model_parameter(

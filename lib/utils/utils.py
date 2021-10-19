@@ -8,6 +8,8 @@ from tqdm import tqdm
 
 np.set_printoptions(linewidth=200)
 
+CrossValidationMean = Dict[str, Any]
+
 
 def preprocess_data(x: np.ndarray,
                     y: np.ndarray,
@@ -75,7 +77,7 @@ def get_best_model_parameter(
     best_accuracy = 0
     results = []
 
-    for combination in tqdm(all_combinations):
+    for combination in tqdm(all_combinations, leave=True):
         combination_input = dict()
         for key_index in range(len(combination)):
             combination_input[model_parameter_keys[key_index]] = combination[key_index]
@@ -122,23 +124,26 @@ def cross_validate_with_val_data(
         val_x: np.ndarray = None,
         val_y: np.ndarray = None,
 ) -> CrossValidationMean:
-    model.fit(x, y)
+    _, epoch_run, change, is_converged, accuracy_report = model.fit(x, y, val_x=val_x, val_y=val_y)
     training_predictions = model.predict(x)
-    training_report = classification_report(y, training_predictions.astype(int),
+    training_report = classification_report(y.astype(int), training_predictions.astype(int),
                                             output_dict=True, zero_division=0)
 
     validation_predictions = model.predict(val_x)
-    validation_report = classification_report(val_y, validation_predictions.astype(int),
+    validation_report = classification_report(val_y.astype(int), validation_predictions.astype(int),
                                               output_dict=True, zero_division=0)
 
     return {
         "training macro f1": training_report["macro avg"]["f1-score"],
         "training weighted f1": training_report["weighted avg"]["f1-score"],
         "training accuracy": training_report["accuracy"],
-
-        "accuracy": validation_report["macro avg"]["f1-score"],
-        "macro f1": validation_report["weighted avg"]["f1-score"],
-        "weighted f1": validation_report["accuracy"],
+        "number_of_epochs_to_converge": epoch_run,
+        "final_gradient_change": float(change),
+        "is_converged": bool(is_converged),
+        "accuracy_report": accuracy_report,
+        "macro f1": validation_report["macro avg"]["f1-score"],
+        "weighted f1": validation_report["weighted avg"]["f1-score"],
+        "accuracy": validation_report["accuracy"],
     }
 
 

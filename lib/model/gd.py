@@ -1,14 +1,12 @@
 import numpy as np
 from lib.utils.math_utils import sigmoid
 from typing import Dict, Tuple, List, Any
-from enum import Enum
 from simple_chalk import chalk
 from lib.types.types import LearningModel
 
 
-class UpdateWeightMethod(Enum):
-    REGULAR = 1
-    MOMENTUM = 2
+def calculate_accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
+    return float(np.count_nonzero(y_pred == y_true) / len(y_pred))
 
 
 class LogisticRegression(LearningModel):
@@ -17,27 +15,38 @@ class LogisticRegression(LearningModel):
             self,
             add_bias: bool = True,
             learning_rate: float = .1,
-            epsilon: float = 1e-4,
-            max_iterations: int = 1e5,
+            epsilon: float = 2.5e-2,
             verbose: bool = False,
-            mini_batch: int = 1,
+            mini_batch: int = None,
             momentum: float = None,
-            update_weight_method: UpdateWeightMethod = UpdateWeightMethod.REGULAR
+            epoch: int = None,
+            accuracy_record_num: int = 20
     ):
         self.add_bias = add_bias
         self.learning_rate = learning_rate
         self.epsilon = epsilon  # to get the tolerance for the norm of gradients
-        self.max_iterations = max_iterations  # maximum number of iteration of gradient descent
         self.mini_batch = mini_batch
         self.momentum = momentum
-        self.update_weights_method = update_weight_method
         self.verbose = verbose
+        self.epoch = epoch
+        self.accuracy_record_num = accuracy_record_num
 
         # Model Parameters.
         self.weights = None
         self.history_gradients = None
 
-    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> LearningModel:
+    def fit(
+            self,
+            x: np.ndarray,
+            y: np.ndarray,
+            **kwargs
+    ) -> Tuple[
+        LearningModel,
+        int,
+        float,
+        bool,
+        List[Tuple[int, float, float]]
+    ]:
 
         # Prepare X
         if x.ndim == 1:
@@ -46,31 +55,47 @@ class LogisticRegression(LearningModel):
             number_of_instances = x.shape[0]
             x = np.column_stack([x, np.ones(number_of_instances)])
 
-        # Get the segmented training
-        # sets based on batch size.
-        training_sets = self.separate_training_data(x, y)
-
         # Set up parameters
+        val_x, val_y = kwargs["val_x"], kwargs["val_y"]
         number_of_instances, number_of_features = x.shape
         self.weights = np.zeros(number_of_features)
         self.history_gradients = list()
-        current_gradient, iterations_run = np.inf, 0
+        raw_gradients, epoch_run = np.inf, 0
+        accuracy_record = list()
+        accuracy_check_point = self.epoch // self.accuracy_record_num
 
-        # the code snippet below is for gradient descent
-        while np.linalg.norm(current_gradient) > self.epsilon and iterations_run < self.max_iterations:
-            training_set = training_sets[iterations_run % len(training_sets)]
-            current_gradient = self.gradient(training_set[0], training_set[1])
-            self.history_gradients.append(current_gradient)
-            self.update_weights(current_gradient)
-            iterations_run += 1
+        while epoch_run < self.epoch:
+            # Get the segmented training
+            # sets based on batch size.
+            training_sets = self.separate_training_data(x, y)
+
+            for batch in training_sets:
+                raw_gradients = self.gradient(batch[0], batch[1])
+                self.update_weights(raw_gradients)
+
+            epoch_run += 1
+
+            if epoch_run % accuracy_check_point == 0:
+                accuracy_record.append(
+                    (
+                        epoch_run,
+                        calculate_accuracy(self.predict(x), y),
+                        calculate_accuracy(self.predict(val_x), val_y)
+                    )
+                )
+
+            if np.linalg.norm(raw_gradients) <= self.epsilon:
+                break
 
         if self.verbose:
             print(
                 f'{chalk.bold("-" * 15 + "COMPLETED FITTING" + "-" * 15)}\n'
-                f'NUMBER OF ITERATIONS: {chalk.green.bold(iterations_run)} FINAL GRADIENT NORM: {chalk.yellowBright.bold(np.linalg.norm(current_gradient))}\n'
+                f'EPOCHS: {chalk.green.bold(epoch_run)}\n'
+                f'GRADIENT CHANGE: {chalk.yellowBright.bold(np.linalg.norm(raw_gradients))}\n'
                 f'FINAL WEIGHTS: {chalk.blueBright(self.weights)}\n')
 
-        return self
+        return self, epoch_run, np.linalg.norm(raw_gradients), np.linalg.norm(
+            raw_gradients) <= self.epsilon, accuracy_record
 
     def update_weights(self, raw_gradients: np.ndarray) -> None:
         """
@@ -78,13 +103,22 @@ class LogisticRegression(LearningModel):
         :param raw_gradients:
         :return:
         """
-        if self.update_weights_method == UpdateWeightMethod.MOMENTUM:
-            beta = self.momentum
-            his = len(self.history_gradients)
-            for t in np.arange(1, his):
-                self.weights += self.history_gradients[-t] * (1 - beta) * beta ** (his - t)
-        elif self.update_weights_method == UpdateWeightMethod.REGULAR:
-            self.weights = self.weights - self.learning_rate * raw_gradients
+
+        g = self.update_weights_momentum(len(self.history_gradients), raw_gradients) \
+            if self.momentum \
+            else raw_gradients
+
+        g = self.learning_rate * g
+
+        self.history_gradients.append(g)
+
+        self.weights = self.weights - g
+
+    def update_weights_momentum(self, t: int, raw_gradients: np.ndarray) -> np.ndarray:
+        if t == 0:
+            return (1 - self.momentum) * raw_gradients
+        else:
+            return self.momentum * self.history_gradients[t - 1] + (1 - self.momentum) * raw_gradients
 
     def separate_training_data(
             self,
@@ -99,11 +133,11 @@ class LogisticRegression(LearningModel):
         :param y: y
         :return: A list of segmented batches.
         """
+        if self.mini_batch >= x.shape[0]:
+            return [(x, y)]
+
         complete_data = np.append(x if x.ndim > 1 else x[:, None], y if y.ndim > 1 else y[:, None], axis=1)
         np.random.shuffle(complete_data)
-
-        if self.mini_batch > x.shape[0]:
-            return [(x, y)]
 
         result = list()
 
@@ -111,6 +145,9 @@ class LogisticRegression(LearningModel):
             if complete_data.shape[0] >= self.mini_batch:
                 result.append((complete_data[:self.mini_batch, :-1], complete_data[:self.mini_batch, -1]))
                 complete_data = complete_data[self.mini_batch:]
+            else:
+                result.append((complete_data[:, :-1], complete_data[:, -1]))
+                break
 
         return result
 
@@ -124,11 +161,15 @@ class LogisticRegression(LearningModel):
         if x.ndim == 1:
             x = x[:, None]
         number_of_tests = x.shape[0]
-        if self.add_bias:
+        if self.add_bias and x.shape[1] != len(self.weights):
             x = np.column_stack([x, np.ones(number_of_tests)])
 
         # Make predictions
-        return sigmoid(np.dot(x, self.weights))
+        result = sigmoid(np.dot(x, self.weights))
+        positive = result > 0.5
+        result[positive] = 1
+        result[~positive] = 0
+        return result.astype(int)
 
     def get_params(self):
         return self.__dict__
@@ -141,16 +182,12 @@ class LogisticRegression(LearningModel):
                 self.learning_rate = v
             elif k == 'epsilon':
                 self.epsilon = v
-            elif k == 'max_iterations':
-                self.max_iterations = v
             elif k == 'verbose':
                 self.verbose = v
             elif k == 'mini_batch':
                 self.mini_batch = v
             elif k == 'momentum':
                 self.momentum = v
-            elif k == 'update_weights_method':
-                self.update_weights_method = v
         return True
 
     def gradient(self, x, y):
@@ -164,3 +201,7 @@ class LogisticRegression(LearningModel):
         yh = sigmoid(np.dot(x, self.weights))  # predictions  size N
         grad = np.dot(x.T, yh - y) / number_of_instances  # divide by N because cost is mean over N points
         return grad
+
+    def loss(self, x: np.ndarray, y: np.ndarray) -> float:
+        z = np.dot(x, self.weights)
+        return float(np.mean(y * np.log1p(np.exp(-z)) + (1 - y) * np.log1p(np.exp(z))))
