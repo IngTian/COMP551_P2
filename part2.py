@@ -1,5 +1,4 @@
 import json
-
 from lib.utils.io_utils import read_csv
 from lib.utils.utils import preprocess_data, get_best_model_parameter, cross_validate
 from typing import List, Tuple, Callable, Dict, Any, Union
@@ -18,128 +17,88 @@ import numpy as np
 from simple_chalk import chalk
 
 
-MAX_FEATURES = 2000
-
-
 # region Preprocess Data Functions
-def preprocess_count_uni_gram_occurrence(
-        x: np.ndarray,
-        y: np.ndarray,
-        verbose: bool,
-) -> Tuple[np.ndarray, np.ndarray]:
-    vectorizer = CountVectorizer(max_features=MAX_FEATURES)
+def preprocess_corpora(
+        training_corpus: np.ndarray,
+        validation_corpus: np.ndarray,
+        test_corpus: np.ndarray,
+        vectorizer: CountVectorizer
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    training_x, training_y = training_corpus[:, 0], training_corpus[:, -1]
+    validation_x, validation_y = validation_corpus[:, 0], validation_corpus[:, -1]
+    test_x, test_y = test_corpus[:, 0], test_corpus[:, -1]
 
-    transformed_x = vectorizer.fit_transform(x[:, 0]).toarray()
-    if verbose:
-        print(f'{chalk.greenBright("Completed Extract Features with Unigram Occurrence")}\n'
-              f'{chalk.bold("Shape:")} {transformed_x.shape}\n'
-              f'{transformed_x[:2]}')
+    transformed_training_x = vectorizer.transform(training_x).toarray()
+    transformed_validation_x = vectorizer.transform(validation_x).toarray()
+    transformed_test_x = vectorizer.transform(test_x).toarray()
 
-    return transformed_x, y
+    transformed_training = np.append(
+        transformed_training_x if transformed_training_x.ndim > 1 else transformed_training_x[:, np.newaxis],
+        training_y if training_y.ndim > 1 else training_y[:, np.newaxis], axis=1)
+    transformed_validation = np.append(
+        transformed_validation_x if transformed_validation_x.ndim > 1 else transformed_validation_x[:, np.newaxis],
+        validation_y if validation_y.ndim > 1 else validation_y[:, np.newaxis], axis=1)
+    transformed_test = np.append(
+        transformed_test_x if transformed_test_x.ndim > 1 else transformed_test_x[:, np.newaxis],
+        test_y if test_y.ndim > 1 else test_y[:, np.newaxis], axis=1)
 
-
-def preprocess_count_uni_gram_occurrence_excluding_stop_words(
-        x: np.ndarray,
-        y: np.ndarray,
-        verbose: bool,
-) -> Tuple[np.ndarray, np.ndarray]:
-    vectorizer = CountVectorizer(stop_words=stopwords.words('english'), max_features=MAX_FEATURES)
-    transformed_x = vectorizer.fit_transform(x[:, 0]).toarray()
-    if verbose:
-        print(f'{chalk.greenBright("Completed Extract Features with Unigram Occurrence Excluding Stopwords")}\n'
-              f'{chalk.bold("Shape:")} {transformed_x.shape}\n'
-              f'{transformed_x[:2]}')
-    return transformed_x, y
+    return transformed_training, transformed_validation, transformed_test
 
 
-def preprocess_count_uni_gram_occurrence_with_stemming(
-        x: np.ndarray,
-        y: np.ndarray,
-        verbose: bool,
-) -> Tuple[np.ndarray, np.ndarray]:
+def preprocess_get_unigram_vectorizer(
+        corpus: np.ndarray,
+        params: Dict = None
+) -> CountVectorizer:
+    vectorizer = CountVectorizer(**params)
+    vectorizer.fit(corpus)
+    return vectorizer
+
+
+def preprocess_get_unigram_ecl_stopwords_vectorizer(
+        corpus: np.ndarray,
+        params: Dict = None
+) -> CountVectorizer:
+    vectorizer = CountVectorizer(**params, stop_words=stopwords.words('english'))
+    vectorizer.fit(corpus)
+    return vectorizer
+
+
+def preprocess_get_unigram_with_stemming_vectorizer(
+        corpus: np.ndarray,
+        params: Dict = None
+) -> CountVectorizer:
     stemming_helper = SnowballStemmer('english')
-    vectorizer = CountVectorizer(max_features=MAX_FEATURES)
-    vectorizer.fit(x[:, 0])
+    vectorizer = CountVectorizer(**params)
+    vectorizer.fit(corpus)
     analyzer = vectorizer.build_analyzer()
 
     new_vectorizer = CountVectorizer(
+        **params,
         analyzer=lambda s: (stemming_helper.stem(word) for word in analyzer(s)),
-        max_features=MAX_FEATURES
     )
-    transformed_x = new_vectorizer.fit_transform(x[:, 0]).toarray()
-    if verbose:
-        print(f'{chalk.greenBright("Completed Extract Features with Unigram Occurrence with Stemming")}\n'
-              f'{chalk.bold("Shape:")} {transformed_x.shape}\n'
-              f'{transformed_x[:2]}')
-    return transformed_x, y
+
+    new_vectorizer.fit(corpus)
+
+    return new_vectorizer
 
 
-def preprocess_count_uni_gram_occurrence_with_lemmatization(
-        x: np.ndarray,
-        y: np.ndarray,
-        verbose: bool,
-) -> Tuple[np.ndarray, np.ndarray]:
+def preprocess_get_unigram_with_lemmatization_vectorizer(
+        corpus: np.ndarray,
+        params: Dict = None
+) -> CountVectorizer:
     lemmatizer = WordNetLemmatizer()
-    vectorizer = CountVectorizer(max_features=MAX_FEATURES)
-    vectorizer.fit(x[:, 0])
+    vectorizer = CountVectorizer(**params)
+    vectorizer.fit(corpus)
     analyzer = vectorizer.build_analyzer()
 
     new_vectorizer = CountVectorizer(
+        **params,
         analyzer=lambda s: (lemmatizer.lemmatize(word) for word in analyzer(s)),
-        max_features=MAX_FEATURES
     )
-    transformed_x = new_vectorizer.fit_transform(x[:, 0]).toarray()
-    if verbose:
-        print(f'{chalk.greenBright("Completed Extract Features with Unigram Occurrence with Lemmatization")}\n'
-              f'{chalk.bold("Shape:")} {transformed_x.shape}\n'
-              f'{transformed_x[:2]}')
-    return transformed_x, y
 
+    new_vectorizer.fit(corpus)
 
-def preprocess_count_bigram_occurrence(
-        x: np.ndarray,
-        y: np.ndarray,
-        verbose: bool,
-) -> Tuple[np.ndarray, np.ndarray]:
-    vectorizer = CountVectorizer(ngram_range=(2, 2), max_features=MAX_FEATURES)
-    transformed_x = vectorizer.fit_transform(x[:, 0]).toarray()
-    if verbose:
-        print(f'{chalk.greenBright("Completed Extract Features with Bigram Occurrence")}\n'
-              f'{chalk.bold("Shape:")} {transformed_x.shape}\n'
-              f'{transformed_x[:2]}')
-    return transformed_x, y
-
-
-def preprocess_count_bigram_occurrence_excluding_stop_words(
-        x: np.ndarray,
-        y: np.ndarray,
-        verbose: bool,
-) -> Tuple[np.ndarray, np.ndarray]:
-    vectorizer = CountVectorizer(
-        stop_words=stopwords.words('english'),
-        ngram_range=(2, 2),
-        max_features=MAX_FEATURES
-    )
-    transformed_x = vectorizer.fit_transform(x[:, 0]).toarray()
-    if verbose:
-        print(f'{chalk.greenBright("Completed Extract Features with Unigram Occurrence Excluding Stopwords")}\n'
-              f'{chalk.bold("Shape:")} {transformed_x.shape}\n'
-              f'{transformed_x[:2]}')
-    return transformed_x, y
-
-
-def preprocess_uni_bi(
-        x: np.ndarray,
-        y: np.ndarray,
-        verbose: bool,
-) -> Tuple[np.ndarray, np.ndarray]:
-    vectorizer = CountVectorizer(ngram_range=(1, 2), max_features=MAX_FEATURES)
-    transformed_x = vectorizer.fit_transform(x[:, 0]).toarray()
-    if verbose:
-        print(f'{chalk.greenBright("Completed Extract Features with Bigram Occurrence")}\n'
-              f'{chalk.bold("Shape:")} {transformed_x.shape}\n'
-              f'{transformed_x[:2]}')
-    return transformed_x, y
+    return new_vectorizer
 
 
 # endregion
@@ -156,72 +115,38 @@ if __name__ == '__main__':
     print(f'SHAPE: {chalk.greenBright(val_data.shape)}')
 
     # Preprocess Data
-    preprocesses = [
-        preprocess_uni_bi,
-        preprocess_count_bigram_occurrence,
-        preprocess_count_bigram_occurrence_excluding_stop_words,
-        preprocess_count_uni_gram_occurrence,
-        preprocess_count_uni_gram_occurrence_with_lemmatization,
-        preprocess_count_uni_gram_occurrence_with_stemming,
-        preprocess_count_uni_gram_occurrence_excluding_stop_words,
+    max_features_dict = {
+        'max_features': 10000
+    }
+
+    vectorizer_generators = [
+        preprocess_get_unigram_vectorizer,
+        preprocess_get_unigram_ecl_stopwords_vectorizer,
+        preprocess_get_unigram_with_stemming_vectorizer,
+        preprocess_get_unigram_with_lemmatization_vectorizer
     ]
 
     processed_data_sets: List[Tuple[np.ndarray, np.ndarray, np.ndarray]] = list()
 
     print(f'{chalk.bold("-" * 15 + "START PREPROCESSING" + "-" * 15)}\n')
-    for preprocess in tqdm(preprocesses):
-        train = preprocess_data(
-            np.copy(training_data[:, :-1]),
-            np.copy(training_data[:, -1]),
-            [
-                preprocess
-            ],
-            verbose=False
-        )
-        val = preprocess_data(
-            np.copy(val_data[:, :-1]),
-            np.copy(val_data[:, -1]),
-            [
-                preprocess
-            ],
-            verbose=False
-        )
-        test = preprocess_data(
-            np.copy(test_data[:, :-1]),
-            np.copy(test_data[:, -1]),
-            [
-                preprocess
-            ],
-            verbose=False
-        )
-        train = np.append(
-            train[0] if train[0].ndim > 1 else train[0][:, None],
-            train[1] if train[1].ndim > 1 else train[1][:, None],
-            axis=1)
-        val = np.append(
-            val[0] if val[0].ndim > 1 else val[0][:, None],
-            val[1] if val[1].ndim > 1 else val[1][:, None],
-            axis=1)
-        test = np.append(
-            test[0] if test[0].ndim > 1 else test[0][:, None],
-            test[1] if test[1].ndim > 1 else test[1][:, None],
-            axis=1)
-        processed_data_sets.append((train, val, test))
+    for generator in tqdm(vectorizer_generators):
+        vectorizer = generator(training_data[:, 0], max_features_dict)
+        processed_data_sets.append(preprocess_corpora(training_data, val_data, test_data, vectorizer))
 
-    print(f'{chalk.bold("-" * 15 + "DATA PREPROCESS COMPLETED" + "-" * 15)}\n')
+    print(f'\n\n{chalk.bold("-" * 15 + "DATA PREPROCESS COMPLETED" + "-" * 15)}\n')
 
     # Run grid search for each preprocessed data
     # and pick the best combination
     results: Dict[str, Any] = dict()
 
-    print(f'{chalk.bold("-" * 15 + "STARTING RUNNING TESTS" + "-" * 15)}\n')
+    print(f'\n\n{chalk.bold("-" * 15 + "STARTING RUNNING TESTS" + "-" * 15)}\n')
 
-    for preprocess_idx in tqdm(range(len(preprocesses))):
-        preprocess = preprocesses[preprocess_idx]
-        train_data, val_data, test_data = processed_data_sets[preprocess_idx]
+    for generator_idx in tqdm(range(len(vectorizer_generators))):
+        preprocess = vectorizer_generators[generator_idx]
+        train_data, val_data, test_data = processed_data_sets[generator_idx]
         name_of_the_preprocess = preprocess.__name__
 
-        model = LogisticRegression(max_iter=2000)
+        model = LogisticRegression(max_iter=1000)
         model.fit(train_data[:, :-1].astype(int), train_data[:, -1].astype(int))
 
         validation_report = classification_report(
