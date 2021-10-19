@@ -20,6 +20,7 @@ class LogisticRegression(LearningModel):
             mini_batch: int = None,
             momentum: float = None,
             epoch: int = None,
+            accuracy_record_num: int = 20
     ):
         self.add_bias = add_bias
         self.learning_rate = learning_rate
@@ -28,6 +29,7 @@ class LogisticRegression(LearningModel):
         self.momentum = momentum
         self.verbose = verbose
         self.epoch = epoch
+        self.accuracy_record_num = accuracy_record_num
 
         # Model Parameters.
         self.weights = None
@@ -60,6 +62,7 @@ class LogisticRegression(LearningModel):
         self.history_gradients = list()
         raw_gradients, epoch_run = np.inf, 0
         accuracy_record = list()
+        accuracy_check_point = self.epoch // self.accuracy_record_num
 
         while epoch_run < self.epoch:
             # Get the segmented training
@@ -72,7 +75,7 @@ class LogisticRegression(LearningModel):
 
             epoch_run += 1
 
-            if epoch_run % 1e5 == 0:
+            if epoch_run % accuracy_check_point == 0:
                 accuracy_record.append(
                     (
                         epoch_run,
