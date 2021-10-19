@@ -14,10 +14,10 @@ if __name__ == '__main__':
     # endregion
 
     params = {
-        "learning_rate": [1e-4, 2e-4, 3e-4, 5e-5, 1e-5],
-        "max_iterations": [100, 300, 10000, 50000, 100000],
-        "mini_batch": [None, 1, 10, 50, 100, 200, 300, 400, 600],
-        "momentum": [0.9, 0.8, 0.5, None],
+        "learning_rate": [2e-4],
+        "epoch": [1e7],
+        "mini_batch": [8],
+        "momentum": [0.6],
     }
 
     best_param, results = get_best_model_parameter(
