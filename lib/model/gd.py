@@ -80,7 +80,9 @@ class LogisticRegression(LearningModel):
                     (
                         epoch_run,
                         calculate_accuracy(self.predict(x), y),
-                        calculate_accuracy(self.predict(val_x), val_y)
+                        calculate_accuracy(self.predict(val_x), val_y),
+                        np.linalg.norm(raw_gradients),
+                        self.loss(x, y)
                     )
                 )
 
