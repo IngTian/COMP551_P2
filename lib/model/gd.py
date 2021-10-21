@@ -45,7 +45,7 @@ class LogisticRegression(LearningModel):
         int,
         float,
         bool,
-        List[Tuple[int, float, float]]
+        List[Tuple[int, float, float, float, float]]
     ]:
 
         # Prepare X
@@ -137,6 +137,7 @@ class LogisticRegression(LearningModel):
             return [(x, y)]
 
         complete_data = np.append(x if x.ndim > 1 else x[:, None], y if y.ndim > 1 else y[:, None], axis=1)
+        complete_data_copy = complete_data
         np.random.shuffle(complete_data)
 
         result = list()
@@ -146,7 +147,9 @@ class LogisticRegression(LearningModel):
                 result.append((complete_data[:self.mini_batch, :-1], complete_data[:self.mini_batch, -1]))
                 complete_data = complete_data[self.mini_batch:]
             else:
-                result.append((complete_data[:, :-1], complete_data[:, -1]))
+                data_still_needed = self.mini_batch - complete_data.shape[0]
+                last_data_set = np.append(complete_data_copy[:data_still_needed], complete_data, axis=0)
+                result.append((last_data_set[:, :-1], last_data_set[:, -1]))
                 break
 
         return result
