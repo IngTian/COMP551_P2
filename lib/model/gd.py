@@ -3,6 +3,7 @@ from lib.utils.math_utils import sigmoid
 from typing import Dict, Tuple, List, Any
 from simple_chalk import chalk
 from lib.types.types import LearningModel
+from tqdm import tqdm
 
 
 def calculate_accuracy(y_pred: np.ndarray, y_true: np.ndarray) -> float:
@@ -28,7 +29,7 @@ class LogisticRegression(LearningModel):
         self.mini_batch = mini_batch
         self.momentum = momentum
         self.verbose = verbose
-        self.epoch = epoch
+        self.epoch = int(epoch)
         self.accuracy_record_num = accuracy_record_num
 
         # Model Parameters.
@@ -64,7 +65,7 @@ class LogisticRegression(LearningModel):
         accuracy_record = list()
         accuracy_check_point = self.epoch // self.accuracy_record_num
 
-        while epoch_run < self.epoch:
+        for epoch_run in tqdm(range(self.epoch)):
             # Get the segmented training
             # sets based on batch size.
             training_sets = self.separate_training_data(x, y)
@@ -72,8 +73,6 @@ class LogisticRegression(LearningModel):
             for batch in training_sets:
                 raw_gradients = self.gradient(batch[0], batch[1])
                 self.update_weights(raw_gradients)
-
-            epoch_run += 1
 
             if epoch_run % accuracy_check_point == 0:
                 accuracy_record.append(

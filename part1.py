@@ -15,9 +15,10 @@ if __name__ == '__main__':
 
     params = {
         "learning_rate": [2e-4],
-        "epoch": [1e7],
-        "mini_batch": [8],
-        "momentum": [0.6],
+        "epoch": [1e6],
+        "mini_batch": [256],
+        "momentum": [0.1],
+        # "accuracy_record_num": []
     }
 
     best_param, results = get_best_model_parameter(

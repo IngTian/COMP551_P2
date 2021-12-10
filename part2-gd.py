@@ -1,10 +1,11 @@
 import json
 from lib.utils.io_utils import read_csv
-from lib.utils.utils import get_best_model_parameter, cross_validate
-from lib.model.gd import LogisticRegression
 from typing import List, Tuple, Dict
 from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import classification_report
 from tqdm import tqdm
+from pprint import pprint
 import nltk
 
 nltk.download('stopwords')
@@ -46,33 +47,33 @@ def preprocess_corpora(
 
 def preprocess_get_unigram_vectorizer(
         corpus: np.ndarray,
-        params: Dict = None
+        paramss: Dict = None
 ) -> CountVectorizer:
-    vectorizer = CountVectorizer(**params)
+    vectorizer = CountVectorizer(**paramss)
     vectorizer.fit(corpus)
     return vectorizer
 
 
 def preprocess_get_unigram_ecl_stopwords_vectorizer(
         corpus: np.ndarray,
-        params: Dict = None
+        paramss: Dict = None
 ) -> CountVectorizer:
-    vectorizer = CountVectorizer(**params, stop_words=stopwords.words('english'))
+    vectorizer = CountVectorizer(**paramss, stop_words=stopwords.words('english'))
     vectorizer.fit(corpus)
     return vectorizer
 
 
 def preprocess_get_unigram_with_stemming_vectorizer(
         corpus: np.ndarray,
-        params: Dict = None
+        paramss: Dict = None
 ) -> CountVectorizer:
     stemming_helper = SnowballStemmer('english')
-    vectorizer = CountVectorizer(**params)
+    vectorizer = CountVectorizer(**paramss)
     vectorizer.fit(corpus)
     analyzer = vectorizer.build_analyzer()
 
     new_vectorizer = CountVectorizer(
-        **params,
+        **paramss,
         analyzer=lambda s: (stemming_helper.stem(word) for word in analyzer(s)),
     )
 
@@ -83,21 +84,30 @@ def preprocess_get_unigram_with_stemming_vectorizer(
 
 def preprocess_get_unigram_with_lemmatization_vectorizer(
         corpus: np.ndarray,
-        params: Dict = None
+        paramss: Dict = None
 ) -> CountVectorizer:
     lemmatizer = WordNetLemmatizer()
-    vectorizer = CountVectorizer(**params)
+    vectorizer = CountVectorizer(**paramss)
     vectorizer.fit(corpus)
     analyzer = vectorizer.build_analyzer()
 
     new_vectorizer = CountVectorizer(
-        **params,
+        **paramss,
         analyzer=lambda s: (lemmatizer.lemmatize(word) for word in analyzer(s)),
     )
 
     new_vectorizer.fit(corpus)
 
     return new_vectorizer
+
+
+def preprocess_get_uni_bi_vectorizer(
+        corpus: np.ndarray,
+        paramss: Dict = None
+) -> CountVectorizer:
+    vectorizer = CountVectorizer(**paramss, ngram_range=(1, 2))
+    vectorizer.fit(corpus)
+    return vectorizer
 
 
 # endregion
@@ -119,7 +129,7 @@ if __name__ == '__main__':
     }
 
     vectorizer_generators = [
-        preprocess_get_unigram_with_stemming_vectorizer,
+        preprocess_get_uni_bi_vectorizer,
     ]
 
     processed_data_sets: List[Tuple[np.ndarray, np.ndarray, np.ndarray]] = list()
@@ -131,36 +141,33 @@ if __name__ == '__main__':
 
     print(f'\n\n{chalk.bold("-" * 15 + "DATA PREPROCESS COMPLETED" + "-" * 15)}\n')
 
-    # Run grid search for each preprocessed data
-    # and pick the best combination
-    print(f'\n\n{chalk.bold("-" * 15 + "STARTING RUNNING TESTS" + "-" * 15)}\n')
-
     params = {
-        "learning_rate": [1e-4, 2e-4, 3e-4, 5e-4, 5e-5],
-        "epoch": [3e6],
-        "mini_batch": [8, 32, 64, 256, 600],
-        "momentum": [0.95, 0.99, 0.8, 0.7, None],
+       "max_iter": 1000
     }
+    td, vd, ted = processed_data_sets[0]
+    model = SGDClassifier(**params)
+    model.fit(td[:, :-1].astype(int), td[:, -1].astype(int))
 
-    stemming_data = processed_data_sets[2]
-
-    td = stemming_data[0]
-    vd = stemming_data[1]
-
-    best_param, results = get_best_model_parameter(
-        params,
-        LogisticRegression,
-        td[:, :-1].astype(int),
+    print(f'\n\n{chalk.bold("-" * 15 + "SHOWING TRAINING RESULTS" + "-" * 15)}\n')
+    pprint(classification_report(
         td[:, -1].astype(int),
-        cross_validate,
-        val_x=vd[:, :-1].astype(int),
-        val_y=vd[:, -1].astype(int)
-    )
-
-    # Save results
-    print(f'\n\n{chalk.bold("-" * 15 + "COMPLETED" + "-" * 15)}\n')
-    f = open("./output/part2.json", 'w')
-    f.write(json.dumps(results, indent=4))
-    f.close()
+        model.predict(td[:, :-1].astype(int)),
+        output_dict=True,
+        zero_division=0
+    ))
+    print(f'\n\n{chalk.bold("-" * 15 + "SHOWING VALIDATION RESULTS" + "-" * 15)}\n')
+    pprint(classification_report(
+        vd[:, -1].astype(int),
+        model.predict(vd[:, :-1].astype(int)),
+        output_dict=True,
+        zero_division=0
+    ))
+    print(f'\n\n{chalk.bold("-" * 15 + "SHOWING TEST RESULTS" + "-" * 15)}\n')
+    pprint(classification_report(
+        ted[:, -1].astype(int),
+        model.predict(ted[:, :-1].astype(int)),
+        output_dict=True,
+        zero_division=0
+    ))
 
 # endregion
